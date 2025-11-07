@@ -1,47 +1,28 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ECommerce.Application.Common;
+using ECommerce.Application.DTOs.Auth;
+using ECommerce.Application.Services;
+using Microsoft.AspNetCore.Mvc;
 
-namespace ECommerce.API.Controllers
+namespace ECommerce.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly IAuthService _auth;
+    public AuthController(IAuthService auth) => _auth = auth;
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        // Temporary in-memory users for demo
-        private static readonly List<User> Users = new()
-        {
-            new User { Id = Guid.NewGuid(), Email = "admin@example.com", Password = "123456" },
-            new User { Id = Guid.NewGuid(), Email = "user@example.com", Password = "password" }
-        };
-
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
-        {
-            var user = Users.FirstOrDefault(u =>
-                u.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase) &&
-                u.Password == request.Password);
-
-            if (user == null)
-                return Unauthorized(new { message = "Invalid email or password" });
-
-            // Normally you would return a JWT token here
-            return Ok(new
-            {
-                message = "Login successful",
-                user = new { user.Id, user.Email }
-            });
-        }
+        var result = await _auth.RegisterAsync(request);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    public class LoginRequest
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class User
-    {
-        public Guid Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        var result = await _auth.LoginAsync(request);
+        return result.Success ? Ok(result) : Unauthorized(result);
     }
 }
